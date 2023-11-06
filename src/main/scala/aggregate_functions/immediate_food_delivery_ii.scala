@@ -1,5 +1,5 @@
 import org.apache.spark.sql.{SparkSession, Row}
-import org.apache.spark.sql.functions.{col}
+import org.apache.spark.sql.functions.{col, min, count, when, lit, avg}
 import org.apache.spark.sql.types.{StructType, StructField, DateType, IntegerType}
 import java.sql.Date
 
@@ -49,7 +49,54 @@ object immediate_food_delivery_ii {
             deliverySchema
         )
 
-        delivery.show()
+        delivery
+          .alias("delivery")
+          .join(
+              delivery
+                .groupBy(
+                    col("customer_id"),
+                )
+                .agg(
+                    min(col("order_date")).alias("min_order_date"),
+                ).alias("min_date_delivery"),
+              col("delivery.customer_id") === col("min_date_delivery.customer_id")
+              && col("delivery.order_date") === col("min_date_delivery.min_order_date")
+          )
+          .select(
+              (
+                  count(
+                      when(
+                          col("order_date") === col("customer_pref_delivery_date"),
+                          1
+                      )
+                  ) / count(lit(1))
+                ).alias("immediate_percentage")
+
+          )
+          .show()
+
+//        delivery
+//          .alias("delivery")
+//          .join(
+//              delivery
+//                .groupBy(
+//                    col("customer_id"),
+//                )
+//                .agg(
+//                    min(col("order_date")).alias("min_order_date"),
+//                ).alias("min_date_delivery"),
+//              col("delivery.customer_id") === col("min_date_delivery.customer_id")
+//                && col("delivery.order_date") === col("min_date_delivery.min_order_date")
+//          )
+//          .agg(
+//              avg(
+//                  when(
+//                      col("order_date") === col("customer_pref_delivery_date"),
+//                      1
+//                  )
+//              )
+//          )
+//          .show()
 
     }
 }
